@@ -1,0 +1,1158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arduino Escape Room</title>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .game-wrapper {
+      width: 100%;
+      max-width: 900px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 30px;
+      position: relative;
+    }
+
+    .registration-screen,
+    .intro-screen,
+    .story-screen,
+    .game-screen {
+      display: none;
+    }
+
+    .registration-screen.active,
+    .intro-screen.active,
+    .story-screen.active,
+    .game-screen.active {
+      display: block;
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .registration-content,
+    .intro-content,
+    .story-content {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .intro-title,
+    .registration-title {
+      font-size: 3em;
+      color: #667eea;
+      margin-bottom: 30px;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .intro-video-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+      align-items: center;
+    }
+
+    .video-wrapper {
+      width: 100%;
+      aspect-ratio: 16/9;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      background: #000;
+    }
+
+    .video-wrapper iframe {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .intro-message {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+      padding: 30px;
+      border-radius: 15px;
+      border-left: 5px solid #c92a2a;
+      box-shadow: 0 4px 15px rgba(238, 90, 111, 0.3);
+    }
+
+    .villain-text {
+      color: white;
+      font-size: 1.15em;
+      line-height: 1.8;
+      margin-bottom: 12px;
+      font-style: italic;
+      text-align: left;
+    }
+
+    .villain-text:last-child {
+      margin-bottom: 0;
+      font-weight: bold;
+    }
+
+    .registration-form {
+      background: #f9f9f9;
+      padding: 30px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      text-align: left;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 15px;
+      font-size: 1.1em;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      transition: border-color 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .form-error {
+      color: #e74c3c;
+      font-size: 0.9em;
+      margin-top: 5px;
+      display: none;
+    }
+
+    .form-error.show {
+      display: block;
+    }
+
+    .intro-story {
+      background: #f9f9f9;
+      padding: 30px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      text-align: left;
+      line-height: 1.8;
+      font-size: 1.1em;
+      color: #333;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .villain-message {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      border-left: 5px solid #c92a2a;
+      font-style: italic;
+    }
+
+    .start-btn,
+    .continue-btn,
+    .register-btn {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.4em;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .start-btn:hover,
+    .continue-btn:hover,
+    .register-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+    }
+
+    .start-btn:active,
+    .continue-btn:active,
+    .register-btn:active {
+      transform: translateY(0);
+    }
+
+    .start-btn:disabled,
+    .register-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .story-title {
+      font-size: 2.5em;
+      color: #667eea;
+      margin-bottom: 25px;
+      font-weight: bold;
+    }
+
+    .story-text {
+      background: #f9f9f9;
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      text-align: left;
+      line-height: 1.8;
+      font-size: 1.05em;
+      color: #333;
+    }
+
+    .story-score {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      font-size: 1.1em;
+    }
+
+    .story-score p {
+      margin: 8px 0;
+    }
+
+    .game-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .game-title {
+      font-size: 2.5em;
+      color: #667eea;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .game-subtitle {
+      font-size: 1.2em;
+      color: #666;
+      margin-bottom: 15px;
+    }
+
+    .player-info {
+      background: #f0f4ff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 0.95em;
+      color: #667eea;
+      font-weight: bold;
+    }
+
+    .level-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .level-dot {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.9em;
+      color: #999;
+      transition: all 0.3s;
+    }
+
+    .level-dot.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
+    }
+
+    .level-dot.completed {
+      background: #4caf50;
+      color: white;
+    }
+
+    .level-theme {
+      text-align: center;
+      font-size: 1.1em;
+      color: #764ba2;
+      font-weight: bold;
+      margin-bottom: 20px;
+      padding: 10px;
+      background: #f0f4ff;
+      border-radius: 8px;
+    }
+
+    .game-stats {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 25px;
+      gap: 20px;
+    }
+
+    .stat-box {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 12px;
+      font-size: 1.1em;
+      font-weight: bold;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      flex: 1;
+      text-align: center;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      cursor: pointer;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .card:hover:not(.flipped):not(.matched) {
+      transform: scale(1.05);
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card.matched {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      padding: 15px;
+    }
+
+    .card-front {
+      background: white;
+      transform: rotateY(180deg);
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .card-image {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    .card-image img {
+      max-width: 85%;
+      max-height: 85%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .card-text {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      font-size: 0.85em;
+      font-weight: 600;
+      color: #333;
+      padding: 8px;
+      word-break: break-word;
+      line-height: 1.3;
+    }
+
+    .card-back {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-size: 2.5em;
+    }
+
+    .button-container {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 0;
+    }
+
+    .game-btn {
+      flex: 1;
+      padding: 15px;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.2em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .new-game-btn {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+    }
+
+    .game-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .new-game-btn:hover {
+      box-shadow: 0 6px 20px rgba(245, 87, 108, 0.5);
+    }
+
+    .game-btn:active {
+      transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+      .game-wrapper {
+        padding: 20px;
+      }
+
+      .game-title, .intro-title, .registration-title {
+        font-size: 2em;
+      }
+
+      .intro-video-container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .card-text {
+        font-size: 0.7em;
+        padding: 5px;
+      }
+
+      .villain-text {
+        font-size: 1em;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .game-title, .intro-title, .registration-title {
+        font-size: 1.5em;
+      }
+
+      .game-subtitle {
+        font-size: 1em;
+      }
+
+      .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .card-text {
+        font-size: 0.65em;
+      }
+
+      .villain-text {
+        font-size: 0.9em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrapper">
+    <!-- Registration Screen -->
+    <div class="registration-screen active" id="registrationScreen">
+      <div class="registration-content">
+        <h1 class="registration-title">🎮 Arduino Escape Room 🎮</h1>
+        <form class="registration-form" id="registrationForm">
+          <div class="form-group">
+            <label for="playerName">Player Name *</label>
+            <input type="text" id="playerName" name="playerName" placeholder="Enter your name..." required>
+            <div class="form-error" id="nameError">Please enter your name</div>
+          </div>
+          <div class="form-group">
+            <label for="playerCountry">Country *</label>
+            <select id="playerCountry" name="playerCountry" required>
+              <option value="">Select country...</option>
+              <option value="Greece">🇬🇷 Greece</option>
+              <option value="Türkiye">🇹🇷 Türkiye</option>
+              <option value="Spain">🇪🇸 Spain</option>
+              <option value="Other">🌍 Other</option>
+            </select>
+            <div class="form-error" id="countryError">Please select a country</div>
+          </div>
+        </form>
+        <button class="register-btn" id="registerBtn">✅ Register & Start</button>
+      </div>
+    </div>
+
+    <!-- Intro Screen -->
+    <div class="intro-screen" id="introScreen">
+      <div class="intro-content">
+        <h1 class="intro-title">🔐 Arduino Escape Room</h1>
+        <div class="intro-video-container">
+          <div class="video-wrapper">
+<iframe src="https://www.youtube.com/embed/RN_dg9eSvdw" width="100%" height="100%" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+          </div>
+          <div class="intro-message">
+            <p class="villain-text">Welcome, my dear visitor…</p>
+            <p class="villain-text">You've stumbled into Dr. Volta's secret Arduino lab.</p>
+            <p class="villain-text">Four locked rooms.</p>
+            <p class="villain-text">Each one a different puzzle.</p>
+            <p class="villain-text">Match the correct Arduino pairs to escape…</p>
+            <p class="villain-text">or stay here as my assistant… forever. Muhahaha.</p>
+          </div>
+        </div>
+        <button class="start-btn" id="startBtn">🚀 Start Your Escape!</button>
+      </div>
+    </div>
+
+    <!-- Story Screen Between Levels -->
+    <div class="story-screen" id="storyScreen">
+      <div class="story-content">
+        <h2 class="story-title" id="storyTitle">🎉 Room Unlocked!</h2>
+        <div class="story-text" id="storyText"></div>
+        <div class="story-score">
+          <p><strong>⭐ Score:</strong> <span id="storyScore">0</span> points</p>
+          <p><strong>⏱️ Time:</strong> <span id="storyTime">0:00</span></p>
+          <p><strong>🎯 Moves:</strong> <span id="storyMoves">0</span></p>
+        </div>
+        <button class="continue-btn" id="continueBtn">Continue to Next Room ➡️</button>
+      </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div class="game-screen" id="gameScreen">
+      <header class="game-header">
+        <h1 class="game-title" id="gameTitle">Arduino Escape Room</h1>
+        <p class="game-subtitle" id="gameSubtitle">Master Arduino through 4 levels!</p>
+        <div class="player-info" id="playerInfo">
+          👤 Player: <span id="displayPlayerName"></span> | 🌍 <span id="displayPlayerCountry"></span>
+        </div>
+        <div class="level-indicator">
+          <div class="level-dot active" id="levelDot1">1</div>
+          <div class="level-dot" id="levelDot2">2</div>
+          <div class="level-dot" id="levelDot3">3</div>
+          <div class="level-dot" id="levelDot4">4</div>
+        </div>
+        <div class="level-theme" id="levelTheme">Level 1: Hardware Components</div>
+      </header>
+      <div class="game-stats">
+        <div class="stat-box"><span id="movesLabel">Moves</span>: <span id="moves">0</span></div>
+        <div class="stat-box"><span id="matchesLabel">Matches</span>: <span id="matches">0</span>/8</div>
+        <div class="stat-box">⏱️ Time: <span id="timer">0:00</span></div>
+      </div>
+      <div class="cards-grid" id="cardsGrid"></div>
+      <div class="button-container">
+        <button class="game-btn new-game-btn" id="newGameBtn">🔄 Restart Level</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const defaultConfig = {
+      game_title: "Arduino Escape Room",
+      game_subtitle: "Master Arduino through 4 levels!",
+      new_game_button: "🔄 Restart Level",
+      next_level_button: "Next Level ➡️",
+      moves_label: "Moves",
+      matches_label: "Matches",
+      win_message: "🎉 Level Complete!",
+      final_win_message: "🏆 Congratulations! You've escaped!",
+      primary_color: "#667eea",
+      secondary_color: "#764ba2",
+      accent_color: "#f5576c",
+      text_color: "#333333",
+      background_color: "#ffffff",
+      font_family: "Segoe UI",
+      font_size: 16
+    };
+
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw4mG8abtCpm7pgf43eOIaNY4Ig2ESiwJ7ApTAscPCni3wdxy7GOrDNJzNt-dctbM6UPg/exec';
+
+    async function sendToGoogleSheets(data) {
+      try {
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+        
+        console.log('✅ Data sent to Google Sheets:', data);
+        return { success: true };
+      } catch (error) {
+        console.error('❌ Error sending to Google Sheets:', error);
+        return { success: false, error: error.message };
+      }
+    }
+
+    const levelStories = [
+      {
+        intro: "You enter the first room. The door slams shut behind you! 🚪",
+        completion: "🎉 <strong>The Hardware Room unlocks!</strong><br><br>Dr. Volta's voice echoes: <em>\"Not bad! You know your components. But can you write the code to control them?\"</em><br><br>The door to the Programming Chamber slides open with a mechanical hiss..."
+      },
+      {
+        intro: "You step into a room filled with glowing computer screens covered in Arduino code. The air smells of fresh coffee and determination. ☕💻",
+        completion: "💻 <strong>The Programming Chamber is solved!</strong><br><br>Dr. Volta sounds impressed: <em>\"Your coding skills are solid! But theory alone won't save you. Let's see if you can debug under pressure!\"</em><br><br>A red emergency light flashes as the Debugging Lab door opens..."
+      },
+      {
+        intro: "Alarms blare! The Debugging Lab is in chaos—screens show error messages everywhere. You must fix the problems to proceed! 🚨",
+        completion: "🐛 <strong>All bugs eliminated!</strong><br><br>Dr. Volta laughs nervously: <em>\"Lucky guess! But here's the real test—my collection of sensors. Interface with them correctly, and you're free to go!\"</em><br><br>The final door opens to reveal a room full of mysterious sensors..."
+      },
+      {
+        intro: "The final room hums with electronic sensors. This is it—your last challenge before freedom! 🎯",
+        completion: "🏆 <strong>YOU'VE ESCAPED!</strong><br><br>Dr. Volta appears on screen, defeated: <em>\"Impressive! You've mastered Arduino from hardware to sensors. You're free to go... but remember, I'll be watching!\"</em><br><br>The exit door unlocks with a satisfying click. You step into the night air, finally free! 🌙"
+      }
+    ];
+
+    const levels = [
+      {
+        name: "Level 1: Hardware Components",
+        icon: "🔧",
+        pairs: [
+          { 
+            id: 1, 
+            image: 'https://drive.google.com/thumbnail?id=1PN_mMyEXY-9JWwKJDOuCw9i53uPJmT54&sz=w400',
+            text: "Arduino Board"
+          },
+          { 
+            id: 2, 
+            image: 'https://drive.google.com/thumbnail?id=1vS9wm_68gDZiDnWDg5tS2advAL89KmqV&sz=w400',
+            text: "Red LED"
+          },
+          { 
+            id: 3, 
+            image: 'https://drive.google.com/thumbnail?id=1YG9sJdtbaaRlxWokPswCFfkDE6XIpY8C&sz=w400',
+            text: "LED RGB"
+          },
+          { 
+            id: 4, 
+            image: 'https://drive.google.com/thumbnail?id=18HNX2elAJ36arYJKcmCWZcdbaSS90HoO&sz=w400',
+            text: "Resistor"
+          },
+          { 
+            id: 5, 
+            image: 'https://drive.google.com/thumbnail?id=1NBk_bOuifNkk2jfDD-ALvSuR6nX8ZDog&sz=w400',
+            text: "Digital I/O"
+          },
+          { 
+            id: 6, 
+            image: 'https://drive.google.com/thumbnail?id=1HYKPlxHWzi0Qv9VzZFM8zrZkeJIBtapA&sz=w400',
+            text: "Analog Input"
+          },
+          { 
+            id: 7, 
+            image: 'https://drive.google.com/thumbnail?id=1I2XYnwfwUZFBiXE5OH26JMWVA_UAXJA3&sz=w400',
+            text: "PWM"
+          },
+          { 
+            id: 8, 
+            image: 'https://drive.google.com/thumbnail?id=1oOl5TSi-XzS1xNtOX9MXyxtTB7v2bKqu&sz=w400',
+            text: "Servo Motor"
+          }
+        ]
+      },
+      {
+        name: "Level 2: Basic Commands",
+        icon: "💻",
+        pairs: [
+          { id: 1, text: "Set pin 7 as digital Output", pair: "pinMode(7, OUTPUT);" },
+          { id: 2, text: "Read digital input from pin 4 to x1", pair: "x1 = digitalRead(4);" },
+          { id: 3, text: "Set serial communication at 9600bps", pair: "Serial.begin(9600);" },
+          { id: 4, text: "Wait 0.5sec", pair: "delay(500);" },
+          { id: 5, text: "Transmit value of x to Serial Port", pair: "Serial.print(x);" },
+          { id: 6, text: "Loop function", pair: "void loop () { }" },
+          { id: 7, text: "A function running once at the beginning", pair: "void setup() { }" },
+          { id: 8, text: "Read an analog to digital converted value from pin A0 to x2", pair: "x2 = analogRead(A0);" }
+        ]
+      },
+      {
+        name: "Level 3: Debugging",
+        icon: "🐛",
+        pairs: [
+          { id: 1, text: "Error: Pin not declared", pair: "Fix: Add pinMode() in setup()" },
+          { id: 2, text: "LED not lighting up", pair: "Check: Wire connection & polarity" },
+          { id: 3, text: "Serial Monitor shows garbage", pair: "Fix: Match baud rates" },
+          { id: 4, text: "analogRead() returns 0", pair: "Check: Pin mode & connections" },
+          { id: 5, text: "Code uploads but doesn't run", pair: "Check: Power supply & reset" },
+          { id: 6, text: "delay() blocks all operations", pair: "Use: millis() for non-blocking" },
+          { id: 7, text: "Variable not updating", pair: "Check: Scope & data type" },
+          { id: 8, text: "Syntax error: expected ';'", pair: "Add: Semicolon at line end" }
+        ]
+      },
+      {
+        name: "Level 4: Sensors & Applications",
+        icon: "📡",
+        pairs: [
+          { id: 1, text: "Temperature & Humidity Sensor", pair: "DHT11 / DHT22" },
+          { id: 2, text: "Detect obstacles & measure distance", pair: "Ultrasonic Sensor HC-SR04" },
+          { id: 3, text: "Detect motion in area", pair: "PIR Motion Sensor" },
+          { id: 4, text: "Measure light intensity", pair: "LDR (Light Dependent Resistor)" },
+          { id: 5, text: "Read environmental pressure", pair: "BMP180 Pressure Sensor" },
+          { id: 6, text: "Detect tilt & orientation", pair: "Accelerometer & Gyroscope" },
+          { id: 7, text: "Measure soil moisture", pair: "Capacitive Soil Sensor" },
+          { id: 8, text: "Read RFID tags", pair: "RFID-RC522 Module" }
+        ]
+      }
+    ];
+
+    let gameState = {
+      currentLevel: 0,
+      completedLevels: [],
+      cards: [],
+      flippedCards: [],
+      matchedPairs: 0,
+      moves: 0,
+      canFlip: true,
+      startTime: null,
+      timerInterval: null,
+      elapsedSeconds: 0,
+      currentScreen: 'registration',
+      playerName: '',
+      playerCountry: '',
+      levelScores: [0, 0, 0, 0],
+      levelTimes: [0, 0, 0, 0],
+      levelMoves: [0, 0, 0, 0],
+      gameStartDate: '',
+      gameStartTime: '',
+      currentGameRecord: null
+    };
+
+    let allGameData = [];
+
+    // Update game progress in Google Sheets
+    async function updateGameProgress() {
+      const totalScore = gameState.levelScores.reduce((sum, score) => sum + score, 0);
+      const totalTime = gameState.levelTimes.reduce((sum, time) => sum + time, 0);
+      const totalMoves = gameState.levelMoves.reduce((sum, moves) => sum + moves, 0);
+      const isCompleted = gameState.completedLevels.length === 4;
+
+      const updateData = {
+        action: 'update',
+        player_name: gameState.playerName,
+        country: gameState.playerCountry,
+        level_1_score: gameState.levelScores[0],
+        level_2_score: gameState.levelScores[1],
+        level_3_score: gameState.levelScores[2],
+        level_4_score: gameState.levelScores[3],
+        total_score: totalScore,
+        total_time: totalTime,
+        total_moves: totalMoves,
+        completed: isCompleted,
+        date: gameState.gameStartDate,
+        time: gameState.gameStartTime
+      };
+
+      await sendToGoogleSheets(updateData);
+    }
+
+    function showScreen(screenName) {
+      document.getElementById('registrationScreen').classList.remove('active');
+      document.getElementById('introScreen').classList.remove('active');
+      document.getElementById('storyScreen').classList.remove('active');
+      document.getElementById('gameScreen').classList.remove('active');
+      
+      if (screenName === 'registration') {
+        document.getElementById('registrationScreen').classList.add('active');
+      } else if (screenName === 'intro') {
+        document.getElementById('introScreen').classList.add('active');
+      } else if (screenName === 'story') {
+        document.getElementById('storyScreen').classList.add('active');
+      } else if (screenName === 'game') {
+        document.getElementById('gameScreen').classList.add('active');
+      }
+      
+      gameState.currentScreen = screenName;
+    }
+
+    async function handleRegistration(e) {
+      e.preventDefault();
+      
+      const nameInput = document.getElementById('playerName');
+      const countryInput = document.getElementById('playerCountry');
+      const nameError = document.getElementById('nameError');
+      const countryError = document.getElementById('countryError');
+      const registerBtn = document.getElementById('registerBtn');
+      
+      nameError.classList.remove('show');
+      countryError.classList.remove('show');
+      
+      const name = nameInput.value.trim();
+      const country = countryInput.value;
+      
+      let hasError = false;
+      
+      if (!name) {
+        nameError.classList.add('show');
+        hasError = true;
+      }
+      
+      if (!country) {
+        countryError.classList.add('show');
+        hasError = true;
+      }
+      
+      if (hasError) return;
+      
+      registerBtn.disabled = true;
+      registerBtn.innerHTML = '<span class="loading-spinner"></span>Saving...';
+      
+      gameState.playerName = name;
+      gameState.playerCountry = country;
+      
+      const now = new Date();
+      gameState.gameStartDate = now.toLocaleDateString('en-US');
+      gameState.gameStartTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      
+      const gameRecord = {
+        action: 'register',
+        player_name: name,
+        country: country,
+        level_1_score: 0,
+        level_2_score: 0,
+        level_3_score: 0,
+        level_4_score: 0,
+        total_score: 0,
+        total_time: 0,
+        total_moves: 0,
+        completed: false,
+        date: gameState.gameStartDate,
+        time: gameState.gameStartTime
+      };
+
+      await sendToGoogleSheets(gameRecord);
+
+      setTimeout(() => {
+        registerBtn.disabled = false;
+        registerBtn.innerHTML = '✅ Register & Start';
+        showScreen('intro');
+      }, 500);
+    }
+
+    function showStoryScreen() {
+      const isFinalLevel = gameState.currentLevel === levels.length - 1;
+      const story = levelStories[gameState.currentLevel];
+      
+      document.getElementById('storyTitle').innerHTML = isFinalLevel ? '🏆 Victory!' : '🎉 Room Unlocked!';
+      document.getElementById('storyText').innerHTML = story.completion;
+      
+      const currentScore = gameState.levelScores[gameState.currentLevel];
+      const currentTime = gameState.levelTimes[gameState.currentLevel];
+      const currentMoves = gameState.levelMoves[gameState.currentLevel];
+      
+      document.getElementById('storyScore').textContent = currentScore;
+      document.getElementById('storyTime').textContent = `${Math.floor(currentTime / 60)}:${(currentTime % 60).toString().padStart(2, '0')}`;
+      document.getElementById('storyMoves').textContent = currentMoves;
+      
+      const continueBtn = document.getElementById('continueBtn');
+      if (isFinalLevel) {
+        const totalScore = gameState.levelScores.reduce((sum, score) => sum + score, 0);
+        document.getElementById('storyText').innerHTML += `<br><br><strong>🎊 FINAL SCORE: ${totalScore} points</strong>`;
+        
+        continueBtn.textContent = '🎊 Play Again';
+        continueBtn.onclick = () => {
+          gameState.currentLevel = 0;
+          gameState.completedLevels = [];
+          gameState.levelScores = [0, 0, 0, 0];
+          gameState.levelTimes = [0, 0, 0, 0];
+          gameState.levelMoves = [0, 0, 0, 0];
+          showScreen('registration');
+        };
+      } else {
+        continueBtn.textContent = 'Continue to Next Room ➡️';
+        continueBtn.onclick = () => {
+          gameState.currentLevel++;
+          initGame();
+          showScreen('game');
+        };
+      }
+      
+      showScreen('story');
+    }
+
+    function shuffleArray(array) {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+
+    function initGame() {
+      const level = levels[gameState.currentLevel];
+      const allCards = [];
+      
+      level.pairs.forEach(pair => {
+        if (pair.image) {
+          allCards.push({ id: pair.id, content: pair.image, displayType: 'image' });
+          allCards.push({ id: pair.id, content: pair.text, displayType: 'text' });
+        } else {
+          allCards.push({ id: pair.id, content: pair.text, displayType: 'text' });
+          allCards.push({ id: pair.id, content: pair.pair, displayType: 'text' });
+        }
+      });
+      
+      gameState.cards = shuffleArray(allCards).map((card, index) => ({
+        ...card,
+        uniqueId: index,
+        isFlipped: false,
+        isMatched: false
+      }));
+      gameState.flippedCards = [];
+      gameState.matchedPairs = 0;
+      gameState.moves = 0;
+      gameState.canFlip = true;
+      gameState.startTime = null;
+      gameState.elapsedSeconds = 0;
+      
+      if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+        gameState.timerInterval = null;
+      }
+
+      updateLevelIndicator();
+      renderGame();
+      updateStats();
+      document.getElementById('levelTheme').textContent = level.name;
+    }
+    
+    function updateLevelIndicator() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`levelDot${i + 1}`);
+        dot.classList.remove('active', 'completed');
+        
+        if (i === gameState.currentLevel) {
+          dot.classList.add('active');
+        } else if (gameState.completedLevels.includes(i)) {
+          dot.classList.add('completed');
+        }
+      }
+    }
+    
+    function startTimer() {
+      if (gameState.startTime) return;
+      
+      gameState.startTime = Date.now();
+      gameState.timerInterval = setInterval(() => {
+        gameState.elapsedSeconds = Math.floor((Date.now() - gameState.startTime) / 1000);
+        updateTimer();
+      }, 1000);
+    }
+    
+    function stopTimer() {
+      if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+        gameState.timerInterval = null;
+      }
+    }
+    
+    function updateTimer() {
+      const minutes = Math.floor(gameState.elapsedSeconds / 60);
+      const seconds = gameState.elapsedSeconds % 60;
+      document.getElementById('timer').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    function calculateScore() {
+      const timePenalty = gameState.elapsedSeconds * 2;
+      const movePenalty = gameState.moves * 10;
+      const baseScore = 1000;
+      const score = Math.max(0, baseScore - timePenalty - movePenalty);
+      return Math.round(score);
+    }
+
+    function renderGame() {
+      const grid = document.getElementById('cardsGrid');
+      grid.innerHTML = '';
+
+      gameState.cards.forEach(card => {
+        const cardElement = document.createElement('div');
+        cardElement.className = 'card';
+        cardElement.dataset.uniqueId = card.uniqueId;
+
+        if (card.isFlipped) {
+          cardElement.classList.add('flipped');
+        }
+        if (card.isMatched) {
+          cardElement.classList.add('matched');
+        }
+
+        const frontContent = card.displayType === 'image' 
+          ? `<div class="card-image"><img src="${card.content}" alt="Arduino component" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'color: #e74c3c; font-size: 0.9em; padding: 10px;\\'>Image unavailable</div>';"></div>`
+          : `<div class="card-text">${card.content}</div>`;
+
+        const level = levels[gameState.currentLevel];
+        cardElement.innerHTML = `
+          <div class="card-face card-back">${level.icon}</div>
+          <div class="card-face card-front">${frontContent}</div>
+        `;
+
+        cardElement.addEventListener('click', () => handleCardClick(card.uniqueId));
+        grid.appendChild(cardElement);
+      });
+    }
+
+    function handleCardClick(uniqueId) {
+      if (!gameState.canFlip) return;
+
+      const card = gameState.cards.find(c => c.uniqueId === uniqueId);
+      if (!card || card.isFlipped || card.isMatched) return;
+      
+      startTimer();
+
+      card.isFlipped = true;
+      gameState.flippedCards.push(card);
+
+      const cardElement = document.querySelector(`[data-unique-id="${uniqueId}"]`);
+      cardElement.classList.add('flipped');
+
+      if (gameState.flippedCards.length === 2) {
+        gameState.moves++;
+        updateStats();
+        gameState.canFlip = false;
+
+        setTimeout(() => checkMatch(), 1000);
+      }
+    }
+
+    async function checkMatch() {
+      const [card1, card2] = gameState.flippedCards;
+
+      if (card1.id === card2.id) {
+        card1.isMatched = true;
+        card2.isMatched = true;
+        gameState.matchedPairs++;
+
+        const el1 = document.querySelector(`[data-unique-id="${card1.uniqueId}"]`);
+        const el2 = document.querySelector(`[data-unique-id="${card2.uniqueId}"]`);
+        el1.classList.add('matched');
+        el2.classList.add('matched');
+
+        updateStats();
+
+        if (gameState.matchedPairs === levels[gameState.currentLevel].pairs.length) {
+          stopTimer();
+          gameState.completedLevels.push(gameState.currentLevel);
+          
+          const score = calculateScore();
+          gameState.levelScores[gameState.currentLevel] = score;
+          gameState.levelTimes[gameState.currentLevel] = gameState.elapsedSeconds;
+          gameState.levelMoves[gameState.currentLevel] = gameState.moves;
+          
+          await updateGameProgress();
+          
+          setTimeout(() => {
+            showStoryScreen();
+          }, 800);
+        }
+      } else {
+        card1.isFlipped = false;
+        card2.isFlipped = false;
+
+        const el1 = document.querySelector(`[data-unique-id="${card1.uniqueId}"]`);
+        const el2 = document.querySelector(`[data-unique-id="${card2.uniqueId}"]`);
+        el1.classList.remove('flipped');
+        el2.classList.remove('flipped');
+      }
+
+      gameState.flippedCards = [];
+      gameState.canFlip = true;
+    }
+
+    function updateStats() {
+      const config = defaultConfig;
+      document.getElementById('moves').textContent = gameState.moves;
+      document.getElementById('matches').textContent = gameState.matchedPairs;
+      document.getElementById('movesLabel').textContent = config.moves_label || defaultConfig.moves_label;
+      document.getElementById('matchesLabel').textContent = config.matches_label || defaultConfig.matches_label;
+    }
+
+    document.getElementById('registrationForm').addEventListener('submit', handleRegistration);
+    document.getElementById('registerBtn').addEventListener('click', handleRegistration);
+    document.getElementById('newGameBtn').addEventListener('click', initGame);
+    document.getElementById('startBtn').addEventListener('click', () => {
+      showScreen('game');
+      initGame();
+    });
+
+    showScreen('registration');
+  </script>
+</body>
+</html>
